@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Korolev W 01";
+  src: url("https://db.onlinewebfonts.com/t/4540c2497e0ca4e62fd53ffad656a6a0.eot");
+  src: url("https://db.onlinewebfonts.com/t/4540c2497e0ca4e62fd53ffad656a6a0.eot?#iefix") format("embedded-opentype"),
+    url("https://db.onlinewebfonts.com/t/4540c2497e0ca4e62fd53ffad656a6a0.woff2") format("woff2"),
+    url("https://db.onlinewebfonts.com/t/4540c2497e0ca4e62fd53ffad656a6a0.woff") format("woff"),
+    url("https://db.onlinewebfonts.com/t/4540c2497e0ca4e62fd53ffad656a6a0.ttf") format("truetype"),
+    url("https://db.onlinewebfonts.com/t/4540c2497e0ca4e62fd53ffad656a6a0.svg#Korolev W01 Medium") format("svg");
+}
+
+:root {
+  --white: white;
+  --avatar-kit-black: #1a1b1f;
+  --medium-purple: #b16cea;
+}
+
+body {
+  background-color: var(--avatar-kit-black);
+  color: var(--white);
+  font-family: "Korolev W 01", sans-serif;
+}
+
+.lawlace-64px-heading-2 {
+  color: var(--white);
+  margin-bottom: 46px;
+  font-family: "Korolev W 01", sans-serif;
+  font-size: 55px;
+  font-weight: 300;
+  line-height: 105%;
+}

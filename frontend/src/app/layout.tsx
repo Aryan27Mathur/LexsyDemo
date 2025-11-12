@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Navigation } from "@/components/Navigation";
 
 export const metadata: Metadata = {
   title: "Lexsy - Legal partner on your hero's journey",
@@ -32,6 +33,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
+        <Navigation />
         {children}
       </body>
     </html>

@@ -1,22 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { GoogleGenAI, createPartFromUri } from '@google/genai';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, ArrowRight } from 'lucide-react';
 import mammoth from 'mammoth';
 import { PDFDocument } from 'pdf-lib';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import Editor from '@/components/Editor';
+import Editor, { EditorRef } from '@/components/Editor';
+import FileExport from '@/components/FileExport';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTypewriter } from '@/hooks/useTypewriter';
+
+interface PlaceholderLocation {
+  start: number;
+  end: number;
+  value: string;
+  originalText: string;
+}
 
 interface MarkdownResult {
   content: string;
   fileName: string;
+  placeholders?: PlaceholderLocation[];
 }
 
 export default function TestPage() {
@@ -24,6 +32,9 @@ export default function TestPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<MarkdownResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showExport, setShowExport] = useState(false);
+  const [exportContent, setExportContent] = useState<string>('');
+  const editorRef = useRef<EditorRef>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -162,9 +173,30 @@ export default function TestPage() {
         throw new Error('File processing failed.');
       }
 
-      // Generate markdown content
+      // Generate markdown content with placeholder detection
       const contents: Array<string | ReturnType<typeof createPartFromUri>> = [
-        'Convert this document to markdown format. Preserve all structure, headings, tables, and formatting.',
+        `Convert this document to markdown format. Preserve all structure, headings, tables, and formatting.
+
+IMPORTANT: Identify any template variables, placeholders, or dynamic content that should be replaced with placeholders. These include:
+- Names (e.g., {{clientName}}, {companyName})
+- Dates (e.g., {{date}}, {signDate})
+- Amounts (e.g., {{amount}}, {total})
+- Any other variable content that needs to be filled in later
+
+Return your response as a JSON object with this exact structure:
+{
+  "content": "The markdown content with placeholders marked as {{placeholderName}}",
+  "placeholders": [
+    {
+      "start": 0,
+      "end": 15,
+      "value": "placeholderName",
+      "originalText": "{{placeholderName}}"
+    }
+  ]
+}
+
+The "start" and "end" are character positions in the "content" string where the placeholder appears.`,
       ];
 
       if (getFile.uri && getFile.mimeType) {
@@ -180,9 +212,25 @@ export default function TestPage() {
         },
       });
 
+      const responseText = response.text || '';
+      
+      // Try to parse JSON response
+      let parsedResult: { content: string; placeholders?: PlaceholderLocation[] };
+      try {
+        // Try to extract JSON from the response (might be wrapped in markdown code blocks)
+        const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) || responseText.match(/(\{[\s\S]*\})/);
+        const jsonText = jsonMatch ? jsonMatch[1] : responseText;
+        parsedResult = JSON.parse(jsonText);
+      } catch (error) {
+        // If JSON parsing fails, treat entire response as content
+        console.warn('Failed to parse JSON response, using raw text:', error);
+        parsedResult = { content: responseText };
+      }
+
       setResult({
-        content: response.text || '',
+        content: parsedResult.content || responseText,
         fileName: file.name,
+        placeholders: parsedResult.placeholders || [],
       });
     } catch (err) {
       console.error('Error processing file:', err);
@@ -193,10 +241,34 @@ export default function TestPage() {
   };
 
   // Typewriter effect for editor content at 10 lines per second (line by line)
-  const { displayedText: animatedContent } = useTypewriter(result?.content || null, 10);
+  const { displayedText: animatedContent, isComplete: isTypewriterComplete } = useTypewriter(result?.content || null, 10);
 
   // Show upload component only when there's no result
   const showUpload = !result;
+
+  const handleNext = () => {
+    if (editorRef.current) {
+      const content = editorRef.current.getContent();
+      setExportContent(content);
+      setShowExport(true);
+    }
+  };
+
+  const handleBackFromExport = () => {
+    setShowExport(false);
+    setExportContent('');
+  };
+
+  // Show export view
+  if (showExport && result) {
+    return (
+      <FileExport
+        editorContent={exportContent}
+        fileName={result.fileName}
+        onBack={handleBackFromExport}
+      />
+    );
+  }
 
   return (
     <>
@@ -212,7 +284,6 @@ export default function TestPage() {
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground" style={{ marginBottom: 'max(1vw, 0.5rem)' }}>Welcome to Lexsy! Your AI Legal expert</h1>
             <p className="text-sm sm:text-base text-muted-foreground">get started by uploading a MIME compatible document</p>
           </div>
-          <ThemeToggle />
         </motion.div>
 
         <AnimatePresence mode="wait">
@@ -310,12 +381,35 @@ export default function TestPage() {
                   <CardTitle>Editor</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Editor content={animatedContent || null} />
+                  <Editor 
+                    ref={editorRef}
+                    content={animatedContent || null} 
+                    placeholders={result?.placeholders || []}
+                    isTypewriterComplete={isTypewriterComplete}
+                  />
                 </CardContent>
               </Card>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Next Button - Square button at bottom */}
+        {result && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="flex justify-end mt-8 mb-6"
+          >
+            <Button
+              onClick={handleNext}
+              className="bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white w-16 h-16 rounded-lg shadow-lg transition-all hover:scale-105 flex items-center justify-center"
+              aria-label="Next to PDF Export"
+            >
+              <ArrowRight className="w-6 h-6" />
+            </Button>
+          </motion.div>
+        )}
       </div>
     </>
   );

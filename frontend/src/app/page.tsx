@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { FileText, Sparkles, MessageCircle, Code, Zap, Palette } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -14,7 +13,6 @@ export default function Home() {
         {/* Header */}
         <div className="flex items-center justify-between mb-12">
           <h1 className="lawlace-64px-heading-2">Welcome to Lexsy!</h1>
-          <ThemeToggle />
         </div>
 
         {/* Introduction */}

@@ -37,7 +37,7 @@ function SetContentPlugin({ content }: SetContentPluginProps) {
       
       // Insert the nodes into the root
       root.append(...nodes);
-    });
+    }, { tag: 'set-content' });
   }, [content, editor]);
 
   return null;

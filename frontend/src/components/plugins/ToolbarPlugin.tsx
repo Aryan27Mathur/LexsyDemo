@@ -10,10 +10,8 @@ import {
 import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
-  REMOVE_LIST_COMMAND,
 } from '@lexical/list';
 import { $setBlocksType } from '@lexical/selection';
-import { $createParagraphNode, $getRoot, $getSelection as $getSelectionHelper } from 'lexical';
 import { Button } from '@/components/ui/button';
 import { Bold, Italic, Underline, List, ListOrdered, Heading1, Heading2, Heading3, Quote } from 'lucide-react';
 
@@ -25,15 +23,6 @@ function ToolbarPlugin() {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
         $setBlocksType(selection, () => $createHeadingNode(headingSize));
-      }
-    });
-  };
-
-  const formatParagraph = () => {
-    editor.update(() => {
-      const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
-        $setBlocksType(selection, () => $createParagraphNode());
       }
     });
   };

@@ -1,12 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  const applyTheme = useCallback((newTheme: 'light' | 'dark') => {
+    const root = document.documentElement;
+    if (newTheme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', newTheme);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -16,20 +26,8 @@ export function ThemeToggle() {
     const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
     setTheme(initialTheme);
     applyTheme(initialTheme);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const applyTheme = (newTheme: 'light' | 'dark') => {
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.body.style.backgroundColor = '#1a1b1f';
-      document.body.style.color = '#ffffff';
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.body.style.backgroundColor = '#ffffff';
-      document.body.style.color = '#1a1b1f';
-    }
-    localStorage.setItem('theme', newTheme);
-  };
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';

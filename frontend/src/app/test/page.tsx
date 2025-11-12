@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, Loader2 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 import mammoth from 'mammoth';
 import { PDFDocument } from 'pdf-lib';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import Editor from '@/components/Editor';
+import { motion, AnimatePresence } from 'motion/react';
+import { useTypewriter } from '@/hooks/useTypewriter';
 
 interface MarkdownResult {
   content: string;
@@ -190,119 +192,132 @@ export default function TestPage() {
     }
   };
 
-  // Split markdown content into lines for line numbering
-  const lines = result?.content.split('\n') || [];
+  // Typewriter effect for editor content at 10 lines per second (line by line)
+  const { displayedText: animatedContent } = useTypewriter(result?.content || null, 10);
+
+  // Show upload component only when there's no result
+  const showUpload = !result;
 
   return (
-    <div className="container mx-auto max-w-6xl" style={{ padding: 'max(2vw, 1rem) max(3vw, 1.5rem)' }}>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style={{ marginBottom: 'max(3vw, 1.5rem)' }}>
-        <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground" style={{ marginBottom: 'max(1vw, 0.5rem)' }}>File to Markdown Converter</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Upload a file to convert it to markdown format using Gemini Flash</p>
-        </div>
-        <ThemeToggle />
-      </div>
-
-      <Card style={{ marginBottom: 'max(2.5vw, 1.25rem)' }}>
-        <CardHeader>
-          <CardTitle>Upload File</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'max(2vw, 1rem)' }}>
-            <div className="flex items-center" style={{ gap: 'max(2vw, 1rem)' }}>
-              <div className="flex-1">
-                <Label htmlFor="file-upload" className="cursor-pointer">
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-gray-400 dark:hover:border-gray-500 transition-colors bg-white dark:bg-gray-800" style={{ padding: 'max(3vw, 1.5rem)' }}>
-                    <div className="flex flex-col items-center justify-center" style={{ gap: 'max(1vw, 0.5rem)' }}>
-                      <Upload className="text-gray-400 dark:text-gray-500" style={{ width: 'max(4vw, 2rem)', height: 'max(4vw, 2rem)' }} />
-                      <span className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {file ? file.name : 'Click to upload or drag and drop'}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        PDF, DOCX, Images, and other supported formats
-                      </span>
-                    </div>
-                  </div>
-                </Label>
-                <Input
-                  id="file-upload"
-                  type="file"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  disabled={isProcessing}
-                />
-              </div>
-            </div>
-
-            {file && (
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center" style={{ gap: 'max(1vw, 0.5rem)' }}>
-                <Button
-                  onClick={processFile}
-                  disabled={isProcessing}
-                  className="w-full sm:flex-1"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    'Convert to Markdown'
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setFile(null);
-                    setResult(null);
-                    setError(null);
-                  }}
-                  disabled={isProcessing}
-                  className="w-full sm:w-auto"
-                >
-                  Clear
-                </Button>
-              </div>
-            )}
-
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-200" style={{ padding: 'max(2vw, 1rem)' }}>
-                <p className="font-medium">Error</p>
-                <p className="text-sm">{error}</p>
-              </div>
-            )}
+    <>
+      <div className="container mx-auto max-w-6xl" style={{ padding: 'max(2vw, 1rem) max(3vw, 1.5rem)' }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+          style={{ marginBottom: 'max(3vw, 1.5rem)' }}
+        >
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground" style={{ marginBottom: 'max(1vw, 0.5rem)' }}>Welcome to Lexsy! Your AI Legal expert</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">get started by uploading a MIME compatible document</p>
           </div>
-        </CardContent>
-      </Card>
+          <ThemeToggle />
+        </motion.div>
 
-      {result && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl lg:text-2xl">Markdown Output: {result.fileName}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative overflow-auto border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900" style={{ maxHeight: 'min(80vh, 800px)' }}>
-              <div className="flex">
-                {/* Line numbers */}
-                <div className="bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 text-right select-none text-gray-500 dark:text-gray-400 font-mono sticky left-0" style={{ padding: 'max(1.5vw, 0.75rem) max(1vw, 0.5rem)', fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)' }}>
-                  {lines.map((_, index) => (
-                    <div key={index} style={{ lineHeight: '1.5rem', minHeight: '1.5rem' }}>
-                      {index + 1}
+        <AnimatePresence mode="wait">
+          {showUpload && (
+            <motion.div
+              key="upload"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50, scale: 0.95 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card style={{ marginBottom: 'max(2.5vw, 1.25rem)' }}>
+                <CardHeader>
+                  <CardTitle>Upload File</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'max(2vw, 1rem)' }}>
+                    <div className="flex items-center" style={{ gap: 'max(2vw, 1rem)' }}>
+                      <div className="flex-1">
+                        <Label htmlFor="file-upload" className="cursor-pointer">
+                          <div className="border-2 border-dashed border-[var(--border)] rounded-lg hover:border-[var(--accent)] transition-colors bg-[var(--card)] text-[var(--card-foreground)]" style={{ padding: 'max(3vw, 1.5rem)' }}>
+                            <div className="flex flex-col items-center justify-center" style={{ gap: 'max(1vw, 0.5rem)' }}>
+                              <Upload className="text-[var(--muted-foreground)] transition-colors" style={{ width: 'max(4vw, 2rem)', height: 'max(4vw, 2rem)' }} />
+                              <span className="text-xs sm:text-sm font-medium text-[var(--foreground)] transition-colors">
+                                {file ? file.name : 'Click to upload or drag and drop'}
+                              </span>
+                              <span className="text-xs text-[var(--muted-foreground)] transition-colors">
+                                PDF, DOCX, Images, and other supported formats
+                              </span>
+                            </div>
+                          </div>
+                        </Label>
+                        <Input
+                          id="file-upload"
+                          type="file"
+                          onChange={handleFileChange}
+                          className="hidden"
+                          disabled={isProcessing}
+                        />
+                      </div>
                     </div>
-                  ))}
-                </div>
-                {/* Markdown content */}
-                <div className="flex-1 overflow-x-auto bg-white dark:bg-gray-950" style={{ padding: 'max(2vw, 1rem)' }}>
-                  <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-semibold prose-p:mb-4 prose-p:leading-7 prose-pre:bg-gray-100 dark:prose-pre:bg-gray-800 prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-code:text-gray-900 dark:prose-code:text-gray-100 prose-code:px-1 prose-code:rounded prose-table:w-full prose-table:border-collapse prose-th:border prose-th:border-gray-300 dark:prose-th:border-gray-700 prose-th:bg-gray-100 dark:prose-th:bg-gray-800 prose-th:p-2 prose-td:border prose-td:border-gray-300 dark:prose-td:border-gray-700 prose-td:p-2 prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-p:text-gray-800 dark:prose-p:text-gray-200">
-                    <ReactMarkdown>{result.content}</ReactMarkdown>
+
+                    {file && (
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center" style={{ gap: 'max(1vw, 0.5rem)' }}>
+                        <Button
+                          onClick={processFile}
+                          disabled={isProcessing}
+                          className="w-full sm:flex-1"
+                        >
+                          {isProcessing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            'Convert to Markdown'
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setFile(null);
+                            setResult(null);
+                            setError(null);
+                          }}
+                          disabled={isProcessing}
+                          className="w-full sm:w-auto"
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    )}
+
+                    {error && (
+                      <div className="bg-[var(--destructive)]/10 border border-[var(--destructive)]/30 rounded-lg text-[var(--destructive-foreground)] transition-colors" style={{ padding: 'max(2vw, 1rem)' }}>
+                        <p className="font-medium">Error</p>
+                        <p className="text-sm">{error}</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {result && (
+            <motion.div
+              key="editor"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <Card style={{ marginBottom: 'max(2.5vw, 1.25rem)' }}>
+                <CardHeader>
+                  <CardTitle>Editor</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Editor content={animatedContent || null} />
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   );
 }
 
